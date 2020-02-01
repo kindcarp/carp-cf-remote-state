@@ -13,6 +13,6 @@ This is the YAML file that contains all the resources. It pulls in a few paramet
 
 #### `params.json`
 This holds the parameters. The parameters are:
-`BucketName`, which much be globally unique per AWS's S3 naming policy.
-`Owner`, which is used for a tag on the S3 bucket and DynamoDB table.
-`TableName`, the name of the DynamoDB table.
+- `BucketName`, which much be globally unique per AWS's S3 naming policy.
+- `Owner`, which is used for a tag on the S3 bucket and DynamoDB table.
+- `TableName`, the name of the DynamoDB table.
