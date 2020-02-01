@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Creates an S3 bucket to use for Terraform remote state.
+
+Parameters:
+  BucketName:
+    Description: S3 bucket name
+    Type: String
+    AllowedPattern: '[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]'
+    MinLength: '3'
+    MaxLength: '63'
+    ConstraintDescription: must contain only alphanumberic characters, dashes and periods.
+  Owner:
+    Description: Owner of the bucket.
+    Type: String
+    MaxLength: '256'
+  TableName:
+    Description: Name of the table used to lock state file.
+    Type: String
+    AllowedPattern: '[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9]'
+    MinLength: '3'
+    MaxLength: '255'
+
+Outputs:
+  BucketName:
+    Value:
+      Ref: S3Bucket
+    Description: Name of the created bucket for terraform s3 backend.
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName:
+        Ref: BucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+      Tags:
+        - Key: owner
+          Value:
+            Ref: Owner
+      VersioningConfiguration:
+        Status: Enabled
+
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: BucketName
+      PolicyDocument:
+        Statement:
+          -
+            Sid: "AllowSSLRequestsOnly"
+            Action: "s3:*"
+            Effect: "Deny"
+            Resource:
+              - Fn::Join:
+                - ""
+                -
+                  - "arn:aws:s3:::"
+                  -
+                    Ref: "S3Bucket"
+                  - "/*"
+              - Fn::Join:
+                - ""
+                -
+                  - "arn:aws:s3:::"
+                  -
+                    Ref: "S3Bucket"
+            Principal: "*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+  DynamoDbTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: 'LockID'
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: 'LockID'
+          KeyType: 'HASH'
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      TableName:
+        Ref: TableName
+      Tags:
+        - Key: owner
+          Value:
+            Ref: Owner
+      SSESpecification:
+        SSEEnabled: true

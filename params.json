@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "BucketName",
+    "ParameterValue": "example-bucket"
+  },
+  {
+    "ParameterKey": "Owner",
+    "ParameterValue": "steve@example.com"
+  },
+  {
+    "ParameterKey": "TableName",
+    "ParameterValue": "example-table"
+  }
+]
