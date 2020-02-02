@@ -52,7 +52,7 @@ Resources:
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket:
-        Ref: BucketName
+        Ref: S3Bucket
       PolicyDocument:
         Statement:
           -
