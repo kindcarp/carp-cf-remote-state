@@ -19,6 +19,12 @@ Parameters:
     AllowedPattern: '[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9]'
     MinLength: '3'
     MaxLength: '255'
+  RoleName:
+    Description: Name of the role used to access state file.
+    Type: String
+    AllowedPattern: '[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9]'
+    MinLength: '3'
+    MaxLength: '64'
 
 Outputs:
   BucketName:
@@ -40,7 +46,8 @@ Resources:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: 'AES256'
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !Ref RemoteStateKey
       Tags:
         - Key: owner
           Value:
@@ -98,3 +105,90 @@ Resources:
             Ref: Owner
       SSESpecification:
         SSEEnabled: true
+
+  RemoteStateKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: This key is used to encrypt the terraform state files at rest.
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: key-default-1
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::'
+                  - !Ref 'AWS::AccountId'
+                  - ':root'
+            Action: 'kms:*'
+            Resource: '*'
+      Tags:
+        - Key: owner
+          Value:
+            Ref: Owner
+
+  TerraformRunnerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      RoleName: !Ref RoleName
+
+  TerraformStatePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: TerraformStateAccess
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:ListAllMyBuckets'
+              - 's3:GetBucketLocation'
+            Resource: '*'
+          - Effect: Allow
+            Action: 's3:ListBucket'
+            Resource:
+              - Fn::GetAtt:
+                - S3Bucket
+                - Arn
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:PutObject'
+            Resource:
+              !Join
+                - ''
+                - - Fn::GetAtt:
+                    - S3Bucket
+                    - Arn
+                  - '/*'
+          - Effect: Allow
+            Action:
+              - 'dynamodb:GetItem'
+              - 'dynamodb:PutItem'
+              - 'dynamodb:DeleteItem'
+            Resource:
+              Fn::GetAtt:
+                - DynamoDbTable
+                - Arn
+          - Effect: Allow
+            Action:
+              - kms:Encrypt
+              - kms:Decrypt
+            Resource:
+              Fn::GetAtt:
+                - RemoteStateKey
+                - Arn
+      Roles:
+        - !Ref TerraformRunnerRole
