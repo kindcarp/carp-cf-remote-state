@@ -35,6 +35,14 @@ Outputs:
     Value:
       Ref: DynamoDbTable
     Description: Name of the DynamoDB Table for terraform s3 locking.
+  RoleName:
+    Value:
+      Ref: RoleName
+    Description: Name of the role for accessing terraform state and locking.
+  RemoteStateKey:
+    Value:
+      Ref: RemoteStateKey
+    Description: Name of the key used to encrypt the terraform state bucket.
 
 Resources:
   S3Bucket:
