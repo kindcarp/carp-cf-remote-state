@@ -8,6 +8,10 @@
     "ParameterValue": "steve@example.com"
   },
   {
+    "ParameterKey": "RoleName",
+    "ParameterValue": "sample-role"
+  },
+  {
     "ParameterKey": "TableName",
     "ParameterValue": "example-table"
   }
